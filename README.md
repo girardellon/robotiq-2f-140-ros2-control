@@ -1,208 +1,155 @@
-# Robotiq 2F-140 ROS 2 Control Stack
+# Robotiq 2F-140 ROS2 Control
+
+ROS 2 Humble + ros2_control integration for the Robotiq 2F-140 gripper, including custom hardware interface and position-based controller with real and dummy driver support.
+
+---
 
 ## Overview
 
-This repository provides a complete ROS 2 Humble control stack for a custom Robotiq 2F-140 parallel gripper, including:
+This repository provides a complete ROS 2 control stack for the Robotiq 2F-140 parallel gripper.
 
-- Parametric URDF/Xacro model
-- ros2_control integration
-- Custom SystemInterface hardware implementation
-- Support for both real hardware and dummy (simulation) driver
-- Standalone bringup launch
-- RViz integration for visualization and debugging
+It includes:
 
-The stack is designed for research-grade robotic manipulation pipelines and can be seamlessly integrated into larger robotic systems (e.g., UR-series manipulators with MoveIt 2).
+- Parametric URDF/xacro model
+- ros2_control SystemInterface hardware plugin
+- ForwardCommand position controller
+- Dummy driver for simulation and development
+- Real hardware driver support
+- Standalone bringup launch file
 
-This implementation enables full position-based control of the gripper through ROS 2 controllers while maintaining modularity and clean separation between description, control, and hardware layers.
+The package is designed for research and industrial manipulation pipelines and is fully compatible with ROS 2 Humble.
 
 ---
 
 ## Repository Structure
 
-robotiq-2f-140-ros2-control/
+```
+robotiq_2f_140_custom/
 ├── robotiq_2f_140_custom_description/
-│   ├── meshes/
-│   ├── urdf/
-│   │   ├── robotiq_2f_140_custom.urdf.xacro
-│   │   └── robotiq_2f_140_custom.ros2_control.xacro
-│   ├── rviz/
-│   ├── CMakeLists.txt
-│   └── package.xml
-│
-├── robotiq_2f_140_custom_bringup/
-│   ├── config/
-│   │   └── ros2_controllers.yaml
-│   ├── launch/
-│   │   └── bringup.launch.py
-│   ├── CMakeLists.txt
-│   └── package.xml
-│
 ├── robotiq_2f_140_custom_hardware/
-│   ├── include/
-│   ├── src/
-│   ├── CMakeLists.txt
-│   └── package.xml
-│
-└── README.md
+└── robotiq_2f_140_custom_bringup/
+```
 
----
+### robotiq_2f_140_custom_description
+- Parametric URDF/xacro model
+- ros2_control wrapper file
+- Custom STL meshes
 
-## Architecture
+### robotiq_2f_140_custom_hardware
+- Custom ros2_control SystemInterface implementation
+- Driver abstraction layer
+- Dummy (fake) driver support
+- Real serial-based hardware driver support
 
-The system follows the standard ROS 2 control architecture:
-
-URDF/Xacro
-   ↓
-ros2_control SystemInterface
-   ↓
-Controller Manager
-   ↓
-ForwardCommandController (position)
-   ↓
-Hardware Driver (real or dummy)
-
-Key components:
-
-- Custom prismatic joint model with symmetric mimic behavior
-- ros2_control SystemInterface implementation
-- ForwardCommandController for position control
-- JointStateBroadcaster for state publication
-- Real hardware serial communication (via driver layer)
-- FakeDriver for development without hardware
-- 100 Hz control update loop
+### robotiq_2f_140_custom_bringup
+- ros2_control_node launch
+- Controller spawners
+- RViz integration
 
 ---
 
 ## System Requirements
 
-- Ubuntu 22.04
 - ROS 2 Humble
 - ros2_control
 - ros2_controllers
 - xacro
+- robot_state_publisher
 - rviz2
-- colcon
 
 ---
 
 ## Build Instructions
 
-Clone the repository inside a ROS 2 workspace:
+Clone the repository inside your ROS 2 workspace:
 
+```bash
 cd ~/ros2_ws/src
-git clone https://github.com/<YOUR_USERNAME>/robotiq-2f-140-ros2-control.git
+git clone https://github.com/girardellon/robotiq-2f-140-ros2-control.git
+```
 
-Build:
+Build the workspace:
 
+```bash
 cd ~/ros2_ws
 colcon build --symlink-install
 source install/setup.bash
+```
 
 ---
 
-## Running in Simulation Mode (Dummy Driver)
+## Launch (Dummy Mode)
 
-The stack supports a dummy hardware driver for development without physical hardware.
+The dummy driver allows full controller testing without real hardware:
 
-Launch the system:
-
+```bash
 ros2 launch robotiq_2f_140_custom_bringup bringup.launch.py
+```
 
-Verify controllers:
+---
 
+## Available Controllers
+
+After launch:
+
+```bash
 ros2 control list_controllers
+```
 
-Expected output:
+Expected controllers:
 
-- joint_state_broadcaster (active)
-- gripper_position_controller (active)
+- `gripper_position_controller`
+- `joint_state_broadcaster`
 
-Test closing the gripper:
+---
 
+## Command the Gripper
+
+Close the gripper:
+
+```bash
 ros2 topic pub --once \
 /gripper_position_controller/commands \
 std_msgs/msg/Float64MultiArray "{data: [0.07]}"
+```
 
-Test opening the gripper:
+Open the gripper:
 
+```bash
 ros2 topic pub --once \
 /gripper_position_controller/commands \
 std_msgs/msg/Float64MultiArray "{data: [0.0]}"
+```
+
+The command corresponds to the prismatic joint position in meters, bounded by the configured stroke parameter.
 
 ---
 
-## Running with Real Hardware
+## Real Hardware Mode
 
-To enable real hardware communication:
+To connect to real hardware:
 
-1. Set the following parameter in robotiq_2f_140_custom.ros2_control.xacro:
+Set:
 
-<param name="use_dummy">false</param>
+```
+use_dummy:=false
+```
 
-2. Configure:
-   - Serial port
-   - Slave address
-   - Speed multiplier
-   - Force multiplier
-
-3. Rebuild and relaunch.
-
----
-
-## Model Description
-
-The gripper is modeled using:
-
-- robotiq_2f_140_base_link
-- robotiq_2f_140_left_finger_link
-- robotiq_2f_140_right_finger_link
-
-Active joint:
-
-- robotiq_2f_140_left_finger_joint (prismatic)
-
-Mimic joint:
-
-- robotiq_2f_140_right_finger_joint
-
-Default stroke: 0.07 m (70 mm)
-
-Joint limits are fully configurable via Xacro parameters.
-
----
-
-## Parameters
-
-The following Xacro arguments are exposed:
-
-- stroke (default: 0.07)
-- mesh_scale (default: 0.001)
-- use_collision (default: true)
-- use_dummy (default: true)
+inside the ros2_control xacro wrapper and configure the appropriate serial parameters (e.g., slave address, baud rate, port) according to your system.
 
 ---
 
 ## Integration
 
-This stack is designed to integrate with:
+This control stack is designed to integrate seamlessly with:
 
-- UR5e + MoveIt 2 pipelines
-- Industrial robotic manipulation frameworks
-- Multi-end-effector robotic systems
-- Research prototypes requiring modular end-effector control
-
-The modular design allows seamless embedding into composite robot descriptions.
-
----
-
-## Known Limitations
-
-- Real-time scheduling requires proper OS configuration
-- Serial communication parameters must match hardware configuration
-- No trajectory controller is included (position-only control)
+- MoveIt 2 manipulation pipelines
+- UR5e arm configurations
+- Modular robotic manipulation systems
+- Research and industrial automation workflows
 
 ---
 
 ## License
 
-This project is released under the Apache License 2.0.
+Apache License 2.0

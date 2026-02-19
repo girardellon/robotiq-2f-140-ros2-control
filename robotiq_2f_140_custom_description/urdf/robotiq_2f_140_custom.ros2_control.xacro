@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robotiq_2f_140_custom_ros2_control">
+
+  <xacro:arg name="stroke" default="0.07"/>
+  <xacro:arg name="use_collision" default="true"/>
+  <xacro:arg name="mesh_scale" default="0.001"/>
+  <xacro:arg name="use_dummy" default="true"/>
+
+  <!-- Include base robot model (same folder) -->
+  <xacro:include filename="robotiq_2f_140_custom.urdf.xacro"/>
+
+  <!-- ros2_control block -->
+  <ros2_control name="Robotiq2F140CustomSystem" type="system">
+    <hardware>
+      <plugin>robotiq_2f_gripper_interfaces/RobotiqGripperHardwareInterface</plugin>
+
+      <!-- Required -->
+      <param name="gripper_closed_position">$(arg stroke)</param>
+
+      <!-- Fake driver -->
+      <param name="use_dummy">$(arg use_dummy)</param>
+
+      <!-- Optional -->
+      <param name="slave_address">0x09</param>
+      <param name="gripper_speed_multiplier">1.0</param>
+      <param name="gripper_force_multiplier">1.0</param>
+    </hardware>
+
+    <joint name="robotiq_2f_140_left_finger_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+</robot>
+

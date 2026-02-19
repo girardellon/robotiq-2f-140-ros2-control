@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robotiq_2f_140_custom">
+
+  <!-- ================= PARAMETERS ================= -->
+
+  <!-- stroke in meters (0.07 = 70 mm) -->
+  <xacro:arg name="stroke" default="0.07"/>
+
+  <!-- true/false -->
+  <xacro:arg name="use_collision" default="true"/>
+
+  <!-- mesh scale: 0.001 converts mm -> meters -->
+  <xacro:arg name="mesh_scale" default="0.001"/>
+
+  <!-- Expose args as xacro properties (so ${mesh_scale}, ${stroke}, ${use_collision} work) -->
+  <xacro:property name="stroke" value="$(arg stroke)"/>
+  <xacro:property name="use_collision" value="$(arg use_collision)"/>
+  <xacro:property name="mesh_scale" value="$(arg mesh_scale)"/>
+
+  <!-- ================= LINKS ================= -->
+
+  <!-- Base -->
+  <link name="robotiq_2f_140_base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://robotiq_2f_140_custom_description/meshes/base.stl"
+              scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+      </geometry>
+    </visual>
+
+    <xacro:if value="${use_collision}">
+      <collision>
+        <geometry>
+          <mesh filename="package://robotiq_2f_140_custom_description/meshes/base.stl"
+                scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+        </geometry>
+      </collision>
+    </xacro:if>
+  </link>
+
+  <!-- Left Finger -->
+  <link name="robotiq_2f_140_left_finger_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://robotiq_2f_140_custom_description/meshes/finger_left.stl"
+              scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+      </geometry>
+    </visual>
+
+    <xacro:if value="${use_collision}">
+      <collision>
+        <geometry>
+          <mesh filename="package://robotiq_2f_140_custom_description/meshes/finger_left.stl"
+                scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+        </geometry>
+      </collision>
+    </xacro:if>
+  </link>
+
+  <!-- Right Finger -->
+  <link name="robotiq_2f_140_right_finger_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://robotiq_2f_140_custom_description/meshes/finger_right.stl"
+              scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+      </geometry>
+    </visual>
+
+    <xacro:if value="${use_collision}">
+      <collision>
+        <geometry>
+          <mesh filename="package://robotiq_2f_140_custom_description/meshes/finger_right.stl"
+                scale="${mesh_scale} ${mesh_scale} ${mesh_scale}"/>
+        </geometry>
+      </collision>
+    </xacro:if>
+  </link>
+
+  <!-- ================= JOINTS ================= -->
+
+  <!-- Active finger joint: 0 = open, +stroke = close -->
+  <joint name="robotiq_2f_140_left_finger_joint" type="prismatic">
+    <parent link="robotiq_2f_140_base_link"/>
+    <child link="robotiq_2f_140_left_finger_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+
+    <!-- closing direction -->
+    <axis xyz="1 0 0"/>
+
+    <limit lower="0.0"
+           upper="${stroke}"
+           effort="100"
+           velocity="0.2"/>
+  </joint>
+
+  <!-- Mimic finger: symmetric motion -->
+  <joint name="robotiq_2f_140_right_finger_joint" type="prismatic">
+    <parent link="robotiq_2f_140_base_link"/>
+    <child link="robotiq_2f_140_right_finger_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+
+    <!-- opposite direction -->
+    <axis xyz="-1 0 0"/>
+
+    <limit lower="0.0"
+           upper="${stroke}"
+           effort="100"
+           velocity="0.2"/>
+
+    <mimic joint="robotiq_2f_140_left_finger_joint"
+           multiplier="1.0"
+           offset="0.0"/>
+  </joint>
+
+</robot>
+
